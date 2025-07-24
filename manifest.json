@@ -8,7 +8,7 @@
   ],
   "content_scripts": [
     {
-      "matches": [ "https://221e.odoo.com/odoo/action-215/*", "https://221e.odoo.com/odoo/crm/*", "https://221e.odoo.com/odoo/action-219/*" ],
+      "matches": [ "https://221e.odoo.com/odoo/action-215/*", "https://221e.odoo.com/odoo/crm/*", "https://221e.odoo.com/odoo/action-219/*", "https://221e.odoo.com/*" ],
       "js": [ "content.js" ],
       "run_at": "document_idle"
     }
