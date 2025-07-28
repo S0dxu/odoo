@@ -622,64 +622,73 @@
       const data = await res.text();
 
       const cleaned = data
-        .replace(/0:/g, "")
-        .replace(/"/g, "")
-        .replace(/\\n/g, "\n")
-        .replace(/\n/g, "")
-        .replace(/[fd]:\{.*?\}/gs, "")
-        .replace(/\{finishReason:[^}]*\}\}?/g, "")
-        .replace(/e:,.*/s, "")
-        .replace(/(Company name:)/g, "\n$1")
-        .replace(/(Location:)/g, "\n$1")
-        .replace(/(Company size.*?:)/g, "\n$1")
-        .replace(/(Revenue:)/g, "\n$1")
-        .replace(/(Industry\/Vertical:)/g, "\n$1")
-        .replace(/(Website:)/g, "\n$1");
+      .replace(/0:/g, "")
+      .replace(/"/g, "")
+      .replace(/\\n/g, "")
+      .replace(/\n/g, "")
+      .replace(/[fd]:\{.*?\}/gs, "")
+      .replace(/\{finishReason:[^}]*\}\}?/g, "")
+      .replace(/e:,.*/s, "")
+      .replace(/json/g, "")
+      .replace(/```/g, "")
+      .replace(/[{}]/gs, "")
+      .replace(/\\/g, "")
+      .trim();
 
-      const lines = cleaned.split("\n").map(line => line.trim()).filter(Boolean);
+    console.log("Cleaned response:", cleaned);
+        
+    const fields = cleaned.split(",").map(f => f.trim()).filter(Boolean);
 
-      let companyName = "";
-      let location = "";
-      let revenue = "";
-      let companySize = "";
-      let industry = "";
-      let website = "";
+    let companyName = "";
+    let location = { stato: "", paese: "" };
+    let revenue = "";
+    let companySize = "";
+    let industry = "";
+    let website = "";
 
-      lines.forEach(line => {
-        if (line.startsWith("Company name:")) {
-          companyName = line.replace("Company name:", "").trim();
-        } else if (line.startsWith("Location:")) {
-          const locString = line.replace("Location:", "").trim();
-          const parts = locString.split(",").map(p => p.trim());
-          location = {
-            country: parts[0] || "",
-            city: parts[1] || ""
-          };
-        } else if (line.startsWith("Company size:") || line.startsWith("Company size (number of employees):")) {
-          companySize = line.replace(/Company size.*?:/, "").trim();
-        } else if (line.startsWith("Revenue:")) {
-          revenue = line.replace("Revenue:", "").trim();
-        } else if (line.startsWith("Industry/Vertical:")) {
-          industry = line.replace("Industry/Vertical:", "").trim();
-        } else if (line.startsWith("Website:")) {
-          website = line.replace("Website:", "").trim();
-        }
-      });
+    fields.forEach(field => {
+      const fieldLower = field.toLowerCase();
 
-      return {
-        companyName,
-        locationCountry: location.country,
-        locationCity: location.city,
-        companySize,
-        revenue,
-        industry,
-        website
-      };
+      if (fieldLower.startsWith("company name:")) {
+        companyName = field.slice(field.indexOf(":") + 1).trim();
+      } else if (fieldLower.startsWith("location:")) {
+        const loc = field.slice(field.indexOf(":") + 1).trim();
+        const [stato, paese] = loc.split("_");
+        location = { stato: stato || "", paese: paese || "" };
+      } else if (fieldLower.startsWith("company size")) {
+        companySize = field.slice(field.indexOf(":") + 1).trim();
+      } else if (fieldLower.startsWith("revenue:")) {
+        revenue = field.slice(field.indexOf(":") + 1).trim();
+      } else if (fieldLower.startsWith("industry/vertical:")) {
+        industry = field.slice(field.indexOf(":") + 1).trim();
+      } else if (fieldLower.startsWith("website:")) {
+        website = field.slice(field.indexOf(":") + 1).trim();
+      }
+    });
+
+    console.log("Company Name:", companyName);
+    console.log("Stato:", location.stato);
+    console.log("Paese:", location.paese);
+    console.log("Company Size:", companySize);
+    console.log("Revenue:", revenue);
+    console.log("Industry:", industry);
+    console.log("Website:", website);
+
+    return {
+      companyName,
+      locationCountry: location.stato,
+      locationCity: location.paese,
+      companySize,
+      revenue,
+      industry,
+      website
+    };
+
     } catch (err) {
       console.error("error:", err);
-      return null;
+      return null
     }
-  }
+  };
 
   function inviaEmailDiInteresseIT() {
     const replyBtn = document.querySelectorAll(".fa-reply");
