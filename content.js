@@ -1,82 +1,6 @@
-    /*
-    setTimeout(() => {
-        let string = document.getElementById('name_0');
-
-        if (!string) {
-            return
-        }
-
-        string = string.value
-
-        if (string.includes("<") && string.includes(">")) {
-
-            let name = string.split(": ")[1].split("<")[0].toUpperCase();
-            let email = string.split("<")[1].split(">")[0].toLowerCase();
-
-            document.getElementById("email_from_1").value = email;
-            document.getElementById("contact_name_0").value = name;
-            document.getElementById('name_0').value = `Form contatti: ${name}`;
-
-            document.querySelector('.o_form_button_save').click();
-        }
-    }, 3000);
-
-
-    setTimeout(() => {
-        const wrapper = document.querySelector('div[property-name="03af3f04112d74c0"]');
-        const input = wrapper.querySelector('input.o_input');
-
-        if (!wrapper || !input || !input.value == "") {
-            return;
-        }
-
-        const shadowRoots = [];
-
-        document.querySelectorAll('*').forEach(el => {
-            if (el.shadowRoot) {
-                shadowRoots.push(el.shadowRoot);
-            }
-        });
-
-        shadowRoots.forEach((sr, i) => {
-            const text = sr.textContent;
-
-            const fromMatch = text.match(/From:\s*([^\n<]+)<([^>]+)>/i);
-            const name = fromMatch ? fromMatch[1].trim() : "";
-            const email = fromMatch ? fromMatch[2].trim() : "";
-
-            const urlMatch = text.match(/Page's url:\s*([^\n]+)/i);
-            const pageUrl = urlMatch ? urlMatch[1].trim() : "";
-
-            const companyMatch = text.match(/Company:\s*([^\n]+)/i);
-            const company = companyMatch ? companyMatch[1].trim() : "";
-
-            let messageMatch = text.match(/Message:\s*([\s\S]*?)(\n\s*\n|$)/i);
-            if (!messageMatch) {
-                messageMatch = text.match(/Body of the message:\s*([\s\S]*?)(\n\s*\n|$)/i);
-            }
-            const message = messageMatch ? messageMatch[1].trim() : "";
-
-            document.getElementById("email_from_1").value = email;
-            document.getElementById("contact_name_0").value = name.toUpperCase();
-            document.getElementById("partner_name_0").value = company;
-            document.getElementById('name_0').value = `Form contatti: ${name.toUpperCase()}`;
-            input.value = pageUrl;
-
-            input.dispatchEvent(new Event('input', { bubbles: true }));
-            input.dispatchEvent(new Event('change', { bubbles: true }));
-            
-            document.querySelector('.o_form_button_save').click();
-        });
-    }, 3000);
-
-    */
-
-
-
-
-
+// JS OF THE NOTIFICATIONS
 (function () {
+  // CSS of the container of the notifications 
   let container = document.getElementById("lead-inactivity-notifications");
   if (!container) {
     container = document.createElement("div");
@@ -98,6 +22,7 @@
     document.head.appendChild(style);
   }
 
+  // To prevent that every time you refresh the page you recieve all of the alerts, we save the ignored messages in the sessionStorage 
   function getIgnoredLeads() {
     const ignored = sessionStorage.getItem("ignoredLeads");
     return ignored ? JSON.parse(ignored) : [];
@@ -111,6 +36,7 @@
     }
   }
 
+  // CSS and the creation of the notifications
   function creaNotifica(lead, messaggio, typeOfOpp = "Lead") {
     if (getIgnoredLeads().includes(lead.id)) return;
     const notif = document.createElement("div");
@@ -135,7 +61,7 @@
     btnContainer.style = "margin-top: 10px; display: flex; gap: 8px; justify-content: flex-end;";
 
     const btnPorta = document.createElement("button");
-    btnPorta.textContent = "Portami al " + typeOfOpp;
+    btnPorta.textContent = "Take me to the " + typeOfOpp;
     btnPorta.style = `
       background-color: #714B67;
       color: white;
@@ -152,7 +78,7 @@
     btnContainer.appendChild(btnPorta);
 
     const btnIgnora = document.createElement("button");
-    btnIgnora.textContent = "Ignora";
+    btnIgnora.textContent = "Ignore";
     btnIgnora.style = `
       background-color: #e7e9ed;
       color: #374151;
@@ -172,6 +98,7 @@
     container.appendChild(notif);
   }
 
+  // Check if there are any inactive leads
   function checkLeadInattivi() {
     fetch("https://221e.odoo.com/web/dataset/call_kw/crm.lead/search", {
       method: "POST",
@@ -226,11 +153,13 @@
                     default_type: "lead",
                   },
                   specification: {
+                    won_status: {},
                     name: {},
                     type: {},
                     message_ids: {
                       fields: {
                         author_id: { fields: { display_name: {} } },
+                        email_from: {},
                         date: {},
                         message_type: {},
                       },
@@ -260,18 +189,23 @@
 
           const lastMsg = sortedMessages[sortedMessages.length - 1];
           const lastAuthor = lastMsg.author_id?.display_name || "";
-          const lastType = lastMsg.message_type === "comment" ? "interno" : "esterno";
+          let lastType = lastMsg.message_type === "comment" ? "interno" : "esterno";
+          const is_won = record.won_status === "won";
+          console.log(is_won)
+
           const lastDate = new Date(lastMsg.date);
           const diffInDays = Math.floor((now - lastDate) / (1000 * 60 * 60 * 24));
           const textDiffInDays = diffInDays <= 1 ? "" : diffInDays
 
-          const typeOfOpp = record.type === "opportunity" ? "Opportunità" : "Lead";
+          const typeOfOpp = record.type === "opportunity" ? "Opportunity" : "Lead";
+          console.log(sortedMessages)
+          console.log(lastMsg, lastType)
 
           if (
-            lastType === "esterno" &&
+            lastType === "esterno" && !is_won &&
             !sortedMessages.some((m) => m.message_type === "comment" && new Date(m.date) > lastDate)
           ) {
-            creaNotifica(record, `Nuova email non letta ${textDiffInDays === "" ? "" : "da"} ${textDiffInDays} ${textDiffInDays === "" ? "" : "giorni"}`, typeOfOpp);
+            creaNotifica(record, `Email unread${textDiffInDays === "" ? "" : " for"} ${textDiffInDays} ${textDiffInDays === "" ? "" : "days"}`, typeOfOpp);
             return;
           }
 
@@ -279,14 +213,14 @@
 
           const lastExternalMsg = [...sortedMessages]
             .reverse()
-            .find((m) => m.message_type === "email" && m.author_id?.display_name !== "Irene Tassinato" && m.author_id?.display_name !== "Alt Jacopo");
+            .find((m) => m.message_type === "email");
 
           if (
             lastType === "interno" &&
-            lastExternalMsg &&
+            lastExternalMsg && !is_won &&
             (now - new Date(lastExternalMsg.date)) / (1000 * 60 * 60 * 24) > 7
           ) {
-            creaNotifica(record,`Inattività da parte del cliente (oltre ${textDiffInDays} giorni)`, typeOfOpp);
+            creaNotifica(record,`Customer inactivity (more than ${textDiffInDays} days)`, typeOfOpp);
             return;
           }
 
@@ -297,71 +231,37 @@
 
           if (
             lastType === "esterno" &&
-            lastInternalMsg &&
+            lastInternalMsg && !is_won &&
             (now - new Date(lastInternalMsg.date)) / (1000 * 60 * 60 * 24) > 7
           ) {
-            creaNotifica(record, "Inattività da parte dell'azienda (oltre 7 giorni)", typeOfOpp);
+            creaNotifica(record, "Inactivity by the company (more than 7 days)", typeOfOpp);
             return;
           }
         });
       })
-      .catch((error) => console.error("Errore nella richiesta:", error));
+      .catch((error) => console.error("Request error:", error));
   }
 
   checkLeadInattivi();
-
-
-  /* setTimeout(() => {
-    const wrapper = document.querySelector('div[property-name="796cdb112503b3fc"]');
-    const input = wrapper?.querySelector('input.o_input');
-    if (!wrapper || !input || input.value !== "") return;
-    const shadowRoots = [];
-    document.querySelectorAll('*').forEach(el => {
-      if (el.shadowRoot) shadowRoots.push(el.shadowRoot);
-    });
-    shadowRoots.forEach((sr) => {
-      const text = sr.textContent;
-      const fromMatch = text.match(/From:\s*([^\n<]+)<([^>]+)>/i);
-      const name = fromMatch ? fromMatch[1].trim() : "";
-      const email = fromMatch ? fromMatch[2].trim() : "";
-      const urlMatch = text.match(/Page's url:\s*([^\n]+)/i);
-      const pageUrl = urlMatch ? urlMatch[1].trim() : "";
-      const companyMatch = text.match(/Company:\s*([^\n]+)/i);
-      const company = companyMatch ? companyMatch[1].trim() : "";
-      let messageMatch = text.match(/Message:\s*([\s\S]*?)(\n\s*\n|$)/i);
-      if (!messageMatch) messageMatch = text.match(/Body of the message:\s*([\s\S]*?)(\n\s*\n|$)/i);
-      const message = messageMatch ? messageMatch[1].trim() : "";
-
-      const emailInput = document.getElementById("email_from_1");
-      if (emailInput) {
-        emailInput.value = email;
-      } else {
-        return
-      }
-
-      document.getElementById("email_from_1").value = email;
-      document.getElementById("contact_name_0").value = name.toUpperCase();
-      document.getElementById("partner_name_0").value = company;
-
-      document.getElementById('name_0').value = `Form contatti: ${name.toUpperCase()}`;
-      input.value = pageUrl;
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-      input.dispatchEvent(new Event('change', { bubbles: true }));
-      document.querySelector('.o_form_button_save').click();
-    });
-  }, 3000); */
 })();
 
-
-
+// JS OF THE CHECKS AND CREATION OF THE BUTTONS
 (function () {
   function checkUrlAndFill() {
-    const isLeadPage = /^https:\/\/221e\.odoo\.com\/odoo\/action-215\/\d+/.test(window.location.href);
+    const isLeadPage = /^https:\/\/221e\.odoo\.com\/odoo\/(action-215|crm)\/\d+/.test(window.location.href);
+    const isHomeLeadPage = /^https:\/\/221e\.odoo\.com\/odoo\/(action-215|crm)(?!\/)/.test(window.location.href);
+
+    if (isHomeLeadPage) {
+      addExport(exportData)
+    }
+    
     if (isLeadPage) {
       const shadowRoots = [];
       document.querySelectorAll('*').forEach(el => {
         if (el.shadowRoot) shadowRoots.push(el.shadowRoot);
       });
+
+      convertToOpportunity()
 
      function returnShadow() {
         for (const sr of shadowRoots) {
@@ -393,6 +293,29 @@
     }
   }
 
+  // Automatically selects inputs when you click "Convert to Opportunity"
+  function convertToOpportunity() {
+    const convertToOpportunity = document.querySelector('.btn.btn-primary');
+    if (convertToOpportunity) {
+      convertToOpportunity.addEventListener('click', () => {
+        setTimeout(() => {
+          const radios = document.querySelectorAll('input[type="radio"][data-value="convert"]');
+          if (radios.length > 0) {
+            radios[0].click();
+          }
+
+          setTimeout(() => {
+              const radios2 = document.querySelectorAll('input[type="radio"][data-value="create"]');
+              if (radios2.length > 0) {
+                radios2[0].click();
+              }
+          }, 500)
+        }, 500)
+      });
+    }
+  }
+
+  // Fill in the Lead information (the first time bc it checks if the origin is empty) you enter the lead for the first time
   function FillInformation() {
     const wrapper = document.querySelector('div[property-name="796cdb112503b3fc"]');
     const wrapper2 = document.querySelector('div[property-name="9c362533498ce698"]');
@@ -418,8 +341,8 @@
       const pageUrl = urlMatch ? urlMatch[1].trim() : "";
       const companyMatch = text.match(/Company:\s*([^\n]+)/i);
       const company = companyMatch ? companyMatch[1].trim() : "";
+      const phoneMatch = text.match(/Phone:\s*([^\n]+)/i);
       let messageMatch = text.match(/Message:\s*([\s\S]*?)(\n\s*\n|$)/i);
-      if (!messageMatch) messageMatch = text.match(/Body of the message:\s*([\s\S]*?)(\n\s*\n|$)/i);
       const message = messageMatch ? messageMatch[1].trim() : "";
 
       const emailInput = document.getElementById("email_from_1");
@@ -432,6 +355,9 @@
       document.getElementById("email_from_1").value = email;
       document.getElementById("contact_name_0").value = name.toUpperCase();
       document.getElementById("partner_name_0").value = company;
+      if (phoneMatch) {
+        document.getElementById("phone_1").value = phoneMatch[1].trim();
+      }
 
       document.getElementById('name_0').value = `Form contatti: ${name.toUpperCase()}`;
       input.value = pageUrl;
@@ -441,10 +367,10 @@
 
     scrapeAll().then(data => {
       if (data) {
-        if (data.locationCountry !== undefined) {
+        if (data.locationCountry) {
           document.getElementById("country_id_0").value = data.locationCountry;
         }
-        if (data.locationCity !== undefined) {
+        if (data.locationCity) {
           document.getElementById("city_0").value = data.locationCity;
         } 
         document.getElementById("website_0").value = data.website;
@@ -474,6 +400,7 @@
     });
   }
 
+  // Fill in the Lead information every time you click on the button (it has some difference between FillInformation)
   function FillInformationManually() {
     const wrapper = document.querySelector('div[property-name="796cdb112503b3fc"]');
     const wrapper2 = document.querySelector('div[property-name="9c362533498ce698"]');
@@ -522,7 +449,7 @@
 
     scrapeAll().then(data => {
       if (data) {
-        if (data.locationCountry !== undefined) {
+        if (data.locationCountry) {
           const inputLocationCountry = document.getElementById("country_id_0")
           inputLocationCountry.value = data.locationCountry
           inputLocationCountry.dispatchEvent(new Event('input', { bubbles: true }));
@@ -537,7 +464,7 @@
           });
           inputLocationCountry.dispatchEvent(enterEvent);
         }
-        if (data.locationCity !== undefined) {
+        if (data.locationCity) {
           document.getElementById("city_0").value = data.locationCity;
         }
         document.getElementById("website_0").value = data.website;
@@ -567,6 +494,7 @@
     });
   }
 
+  // When you click on the "Format" it removes the overflow-x that is annoying
   function removeShadow() {
     const hostsWithShadow = [];
     document.querySelectorAll('*').forEach(el => {
@@ -606,6 +534,135 @@
     document.head.appendChild(style);
   }
 
+  // export all of the data of Leads and Opportunity in a excel file
+  function exportData() {
+    fetch("https://221e.odoo.com/web/dataset/call_kw/crm.lead/search", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "call",
+        params: {
+          model: "crm.lead",
+          method: "search",
+          args: [[["active", "=", true]]],
+          kwargs: {
+            context: {
+              lang: "it_IT",
+              tz: "Europe/Rome",
+              uid: 2,
+              allowed_company_ids: [1],
+            },
+          },
+        },
+        id: 1,
+      }),
+    })
+      .then((res) => res.json())
+      .then((searchData) => {
+        const ids = searchData.result;
+        if (!Array.isArray(ids) || ids.length === 0) return Promise.reject("No records found");
+        return fetch("https://221e.odoo.com/web/dataset/call_kw/crm.lead/web_read", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            method: "call",
+            params: {
+              model: "crm.lead",
+              method: "web_read",
+              args: [ids],
+              kwargs: {
+                context: {
+                  lang: "it_IT",
+                  tz: "Europe/Rome",
+                  uid: 2,
+                  allowed_company_ids: [1],
+                  default_type: "lead",
+                },
+                specification: {
+                  id: {},
+                  name: {},
+                  type: {},
+                  contact_name: {},
+                  email_from: {},
+                  phone: {},
+                  website: {},
+                  city: {},
+                  country_id: { fields: { display_name: {} } },
+                  partner_id: { fields: { display_name: {} } },
+                  partner_name: {},
+                  expected_revenue: {},
+                  lead_properties: {},
+                  message_ids: {
+                    fields: {
+                      author_id: { fields: { display_name: {} } },
+                      email_from: {},
+                      date: {},
+                      message_type: {},
+                      body: {},
+                    },
+                  },
+                  won_status: {},
+                },
+              },
+            },
+            id: 2,
+          }),
+        });
+      })
+      .then((res) => (res ? res.json() : null))
+      .then((readData) => {
+        if (!readData?.result) return;
+        const filteredRecords = readData.result.filter((record) => record.won_status !== "");
+        const dataForExcel = filteredRecords.map((record) => {
+          const props = {};
+          if (Array.isArray(record.lead_properties)) {
+            record.lead_properties.forEach((prop) => {
+              props[prop.string] = prop.value;
+            });
+          }
+          let firstEmailDate = null;
+          if (Array.isArray(record.message_ids) && record.message_ids.length > 0) {
+            const emails = record.message_ids.filter(
+              (m) => m.message_type === "email" && m.date
+            );
+            if (emails.length > 0) {
+              emails.sort((a, b) => new Date(a.date) - new Date(b.date));
+              firstEmailDate = emails[0].date;
+            }
+          }
+          return {
+            Contact: record.contact_name || "N/A",
+            Email: record.email_from || "N/A",
+            Date: firstEmailDate || "N/A",
+            Origin: props["Origin"] || "N/A",
+            Employees: props["Employees"] || "N/A",
+            Industry: props["Industry"] || "N/A",
+            Sales: props["Sales"] || "N/A",
+            Website: record.website || "N/A",
+            Città: record.city || "N/A",
+            Paese: record.country_id ? record.country_id.display_name || "N/A" : "N/A",
+            "Company name": record.partner_name || "N/A",
+            Phone: record.phone || "N/A",
+            Revenue: record.expected_revenue || "N/A",
+          };
+        });
+        const worksheet = XLSX.utils.json_to_sheet(dataForExcel);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Leads");
+        XLSX.writeFile(workbook, "leads_export.xlsx");
+      })
+      .catch((error) => console.error("Request error:", error));
+  }
+
+  // It does a request to my other server hosted in vercel to recive some additional informations of the company
   async function scrapeAll() {
     const input = document.querySelector("#partner_name_0");
     const azienda = input ? encodeURIComponent(input.value.trim()) : "";
@@ -674,15 +731,20 @@
     console.log("Industry:", industry);
     console.log("Website:", website);
 
+    function cleanField(value) {
+      return (value === null || value === undefined || value === "null") ? "" : value.trim();
+    }
+
     return {
-      companyName,
-      locationCountry: location.stato,
-      locationCity: location.paese,
-      companySize,
-      revenue,
-      industry,
-      website
+      companyName: cleanField(companyName),
+      locationCountry: cleanField(location.stato),
+      locationCity: cleanField(location.paese),
+      companySize: cleanField(companySize),
+      revenue: cleanField(revenue),
+      industry: cleanField(industry),
+      website: cleanField(website)
     };
+
 
     } catch (err) {
       console.error("error:", err);
@@ -690,6 +752,7 @@
     }
   };
 
+  // It opens the same window of when you click "Reply" but adds a pre-written text in Italian
   function inviaEmailDiInteresseIT() {
     const replyBtn = document.querySelectorAll(".fa-reply");
     if (replyBtn.length > 0) {
@@ -716,9 +779,34 @@
           paragraph.dispatchEvent(new Event("input", { bubbles: true }));
         }
       }
+      const subject = document.querySelector('#subject_0');
+      if (subject) {
+        let text = subject.value || subject.textContent || '';
+        if (text.startsWith('Re: ')) {
+          text = text.slice(4);
+          if ('value' in subject) {
+            subject.value = text;
+          } else {
+            subject.textContent = text;
+          }
+        }
+      }
+
+      const badges = document.querySelectorAll('.o_field_tags .o_tag');
+
+      badges.forEach(badge => {
+        const email = badge.querySelector('.o_badge_text').title;
+        if (email.endsWith('@221e.com') && !email.endsWith('info@221e.com')) {
+          const deleteLink = badge.querySelector('a.o_delete');
+          if (deleteLink) {
+            deleteLink.click();
+          }
+        }
+      });
     }, 1000);
   }
 
+  // It opens the same window of when you click "Reply" but adds a pre-written text in English
   function inviaEmailDiInteresseEN() {
     const replyBtn = document.querySelectorAll(".fa-reply");
     if (replyBtn.length > 0) {
@@ -745,9 +833,69 @@
           paragraph.dispatchEvent(new Event("input", { bubbles: true }));
         }
       }
+      const subject = document.querySelector('#subject_0');
+      if (subject) {
+        let text = subject.value || subject.textContent || '';
+        if (text.startsWith('Re: ')) {
+          text = text.slice(4);
+          if ('value' in subject) {
+            subject.value = text;
+          } else {
+            subject.textContent = text;
+          }
+        }
+      }
+
+      const badges = document.querySelectorAll('.o_field_tags .o_tag');
+
+      badges.forEach(badge => {
+        const email = badge.querySelector('.o_badge_text').title;
+        if (email.endsWith('@221e.com') && !email.endsWith('info@221e.com')) {
+          const deleteLink = badge.querySelector('a.o_delete');
+          if (deleteLink) {
+            deleteLink.click();
+          }
+        }
+      });
     }, 1000);
   }
 
+  // It adds the Button "Reply" and remove the other "Reply to" button of odoo that doesn't work well
+  function replyTo() {
+    const replyBtn = document.querySelectorAll(".fa-reply");
+    if (replyBtn.length > 0) {
+      replyBtn[0].click();
+    }
+
+    setTimeout(() => {
+      const subject = document.querySelector('#subject_0');
+      if (subject) {
+        let text = subject.value || subject.textContent || '';
+        if (text.startsWith('Re: ')) {
+          text = text.slice(4);
+          if ('value' in subject) {
+            subject.value = text;
+          } else {
+            subject.textContent = text;
+          }
+        }
+      }
+
+      const badges = document.querySelectorAll('.o_field_tags .o_tag');
+
+      badges.forEach(badge => {
+        const email = badge.querySelector('.o_badge_text').title;
+        if (email.endsWith('@221e.com') && !email.endsWith('info@221e.com')) {
+          const deleteLink = badge.querySelector('a.o_delete');
+          if (deleteLink) {
+            deleteLink.click();
+          }
+        }
+      });
+    },1000 )
+  }
+
+  // It is the base of the button
   function addButton(text, funzioneClick) {
     const container = document.querySelector('.o_statusbar_buttons');
     if (!container) return;
@@ -761,6 +909,7 @@
     container.appendChild(button);
   }
 
+  // It creates the button
   function createButton(text, funzioneClick) {
     const button = document.createElement('button');
     button.className = 'btn btn-primary';
@@ -775,26 +924,72 @@
     return button;
   }
 
+  // It creates the export Button
+  function addExport(funzioneClick) {
+    const container = document.querySelector('div.o_control_panel_breadcrumbs.d-flex.align-items-center.gap-1.order-0.h-lg-100');
+    if (!container) return;
+
+    const exists = Array.from(container.querySelectorAll('button'))
+      .some(btn => btn.textContent.trim() === "Export Data");
+
+    if (exists) return;
+
+    const button = document.createElement('button');
+    button.className = 'o_button_generate_leads btn btn-secondary';
+    button.setAttribute('data-hotkey', 'r');
+    button.textContent = 'Export Data';
+    button.addEventListener('click', funzioneClick);
+
+    container.insertBefore(button, container.lastChild);
+  }
+
+  // It creates the reply Button
+  function addReply(funzioneClick) {
+    const container = document.querySelector('div.o-mail-Chatter-topbar');
+    if (!container) return;
+
+    const exists = Array.from(container.querySelectorAll('button'))
+      .some(btn => btn.textContent.trim() === "Reply");
+
+    if (exists) return;
+
+    const sendMessageBtn = document.querySelector('.o-mail-Chatter-sendMessage.btn.text-nowrap.me-1.btn-primary.my-2');
+    if (sendMessageBtn) {
+      sendMessageBtn.remove();
+    } else {
+      return
+    }
+
+    const button = document.createElement('button');
+    button.className = 'o-mail-Chatter-sendMessage btn text-nowrap me-1 btn-primary my-2';
+    button.setAttribute('data-hotkey', 'r');
+    button.textContent = 'Reply';
+    button.addEventListener('click', funzioneClick);
+
+    container.insertBefore(button, container.firstChild);
+  }
+
+  // Function to create the buttons
   function addButton1() {
-    addButton('Riempi Manualmente', FillInformationManually);
+    addButton('Fill Manually', FillInformationManually);
   }
 
   function addButton2() {
-    addButton('Promemoria IT', inviaEmailDiInteresseIT);
+    addButton('Reminder IT', inviaEmailDiInteresseIT);
+    addReply(replyTo)
   }
 
   function addButton3() {
-    addButton('Promemoria EN', inviaEmailDiInteresseEN);
+    addButton('Reminder EN', inviaEmailDiInteresseEN);
   }
 
   function addButton4() {
-    addButton('Formatta Email', removeShadow);
+    addButton('Format', removeShadow);
   }
-
 
   setInterval(checkUrlAndFill, 100);
 
-
+  // It refresh the emails every 5sec
   setInterval(() => {
     fetch("https://221e.odoo.com/web/dataset/call_button/fetchmail.server/fetch_mail", {
     method: "POST",
@@ -827,5 +1022,44 @@
   .then(data => {
     console.log(data);
   })
-  }, 5000) 
+  }, 5000)
+
+  // It makes a request to delete the duplicates Leads if there are any
+  setInterval(() => {
+    fetch('https://221e.odoo.com/web/dataset/call_button/ir.cron/method_direct_trigger', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      id: 52,
+      jsonrpc: "2.0",
+      method: "call",
+      params: {
+        args: [[25]],
+        kwargs: {
+          context: {
+            params: {
+              actionStack: [
+                { displayName: "Azioni pianificate", action: "crons", view_type: "list" },
+                { displayName: "Delete Leads", action: "crons", view_type: "form", resId: 25 }
+              ],
+              resId: 25,
+              action: "crons"
+            },
+            lang: "it_IT",
+            tz: "Europe/Rome",
+            uid: 2,
+            allowed_company_ids: [1]
+          }
+        },
+        method: "method_direct_trigger",
+        model: "ir.cron"
+      }
+    })
+  })
+  .then(res => res.json())
+  .then(data => console.log('Success:', data))
+  .catch(err => console.error('Error:', err));
+  }, 30000)
 })();

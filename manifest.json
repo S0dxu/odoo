@@ -4,12 +4,22 @@
   "version": "1.0",
   "permissions": [],
   "host_permissions": [
-    "https://221e.odoo.com/odoo/action-215/*"
+    "https://221e.odoo.com/odoo/action-215/*",
+    "https://221e.odoo.com/odoo/crm/*"
   ],
   "content_scripts": [
     {
-      "matches": [ "https://221e.odoo.com/odoo/action-215/*", "https://221e.odoo.com/odoo/crm/*", "https://221e.odoo.com/odoo/action-219/*", "https://221e.odoo.com/*" ],
-      "js": [ "content.js" ],
+      "matches": [
+        "https://221e.odoo.com/odoo/action-215/*",
+        "https://221e.odoo.com/odoo/crm/*",
+        "https://221e.odoo.com/odoo/action-219/*",
+        "https://221e.odoo.com/*",
+        "https://221e.odoo.com/odoo/crm/*"
+      ],
+      "js": [
+        "libs/xlsx.full.min.js",
+        "content.js"
+      ],
       "run_at": "document_idle"
     }
   ],
