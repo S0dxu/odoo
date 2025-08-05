@@ -293,6 +293,7 @@
       if (document.querySelector('.o_statusbar_buttons')) {
         addButton1();
         addButton4();
+        removeShadow();
       }
     }
   }
@@ -514,6 +515,18 @@
       });
 
       tempDiv.querySelectorAll('pre').forEach(pre => {
+        let text = pre.textContent;
+        let formatted = '';
+
+        const messageIndex = text.indexOf("Message:");
+        if (messageIndex !== -1) {
+          const before = text.slice(0, messageIndex);
+          const after = text.slice(messageIndex + "Message:".length);
+
+          formatted = `<i style="font-size: 14px">${before}</i>\n\nMessage:${after}`;
+          pre.innerHTML = formatted;
+        }
+
         pre.classList.add('font-size-16');
       });
 
@@ -525,7 +538,7 @@
     const style = document.createElement('style');
     style.textContent = `
       .font-size-16 {
-        font-size: 14px !important;
+        font-size: 16px !important;
         background: transparent !important;
         font-family: "Arial", sans-serif;
         border: none !important;
@@ -533,6 +546,16 @@
         white-space: pre-wrap !important;
         word-break: break-word !important;
         margin: 0 !important;
+        font-family: var(--body-font-family);
+        font-size: var(--body-font-size) !important;
+        font-weight: var(--body-font-weight) !important;
+        line-height: var(--body-line-height) !important;
+      }
+      .font-size-16 i {
+        font-style: italic;
+      }
+      .font-size-16 b {
+        font-weight: bold;
       }
     `;
     document.head.appendChild(style);
