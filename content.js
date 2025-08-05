@@ -262,6 +262,10 @@
       });
 
       convertToOpportunity()
+      
+      if (document.querySelector(".o_button_export_data")) {
+        document.querySelector(".o_button_export_data").remove()
+      }
 
      function returnShadow() {
         for (const sr of shadowRoots) {
@@ -934,8 +938,10 @@
 
     if (exists) return;
 
+    if (document.querySelector(".o_button_export_data")) return
+
     const button = document.createElement('button');
-    button.className = 'o_button_generate_leads btn btn-secondary';
+    button.className = 'o_button_export_data btn btn-secondary';
     button.setAttribute('data-hotkey', 'r');
     button.textContent = 'Export Data';
     button.addEventListener('click', funzioneClick);
