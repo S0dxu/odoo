@@ -1063,6 +1063,21 @@
           }
         }
       });
+
+      const text = document.querySelector(".modal-content .o-paragraph");
+
+      if (text) {
+          text.focus();
+
+          const deleteEvent = new KeyboardEvent("keydown", {
+              key: "Delete",
+              code: "Delete",
+              keyCode: 46,
+              which: 46,
+              bubbles: true
+          });
+          text.dispatchEvent(deleteEvent);
+      }
     },1000 )
   }
 
